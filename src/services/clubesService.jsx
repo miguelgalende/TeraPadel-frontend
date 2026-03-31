@@ -14,6 +14,12 @@ export async function listarClubs() {
   return await res.json();
 }
 
+export const getClub = async (idClub) => {
+  const res = await fetch(`${API_URL}/clubs/${idClub}`);
+  if (!res.ok) throw new Error("Error obteniendo club");
+  return res.json();
+};
+
 export async function eliminarClub(id) {
   const res = await fetch(`${API_URL}/clubs/eliminar/${id}`, {
     method: "DELETE",

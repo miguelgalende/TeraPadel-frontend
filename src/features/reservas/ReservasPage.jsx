@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getPista } from "../../services/pistasService";
 import { listarReservasUsuario } from "../../services/reservasService";
+import { getClub } from "../../services/clubesService";
 
 export default function ReservasPage() {
   const [reservas, setReservas] = useState([]);
@@ -8,10 +9,11 @@ export default function ReservasPage() {
 
   const usuario = JSON.parse(localStorage.getItem("usuario"));
   const token = localStorage.getItem("token");
+
   const esPasada = (fechaISO) => {
     const ahora = new Date();
     const fechaReserva = new Date(fechaISO);
-    return fechaReserva < ahora; // TRUE si ya ha pasado
+    return fechaReserva < ahora;
   };
 
   useEffect(() => {
@@ -24,8 +26,13 @@ export default function ReservasPage() {
         const completas = await Promise.all(
           data.map(async (reserva) => {
             const pista = await getPista(reserva.idPista);
-            return { ...reserva, pista };
+            const club = await getClub(pista.idClub);
+            return { ...reserva, pista, club };
           }),
+        );
+
+        completas.sort(
+          (a, b) => new Date(a.inicioReserva) - new Date(b.inicioReserva),
         );
 
         setReservas(completas);
@@ -77,32 +84,38 @@ export default function ReservasPage() {
       {reservas.length === 0 ? (
         <p>No tienes reservas realizadas.</p>
       ) : (
-        reservas.map((reserva) => {
-          const pasada = esPasada(reserva.inicioReserva);
+        <div className="flex flex-wrap gap-6">
+          {reservas.map((reserva) => {
+            const pasada = esPasada(reserva.inicioReserva);
 
-          return (
-            <div
-              key={reserva.idReserva}
-              className="bg-white p-4 shadow rounded mb-4 flex gap-4"
-            >
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold">
-                  {reserva.pista?.nombrePista}
-                </h2>
+            return (
+              <div
+                key={reserva.idReserva}
+                className="bg-white p-4 shadow rounded flex flex-col justify-between w-full sm:w-[48%] lg:w-[30%] max-w-sm mx-auto"
+              >
+                <div>
+                  <h2 className="text-xl font-semibold text-center">
+                    {reserva.club?.nombreClub}
+                  </h2>
 
-                <p>
-                  <strong>Inicio:</strong>{" "}
-                  {new Date(reserva.inicioReserva).toLocaleString()}
-                </p>
+                  <p>
+                    <strong>Pista:</strong> {reserva.pista?.nombrePista}
+                  </p>
 
-                <p>
-                  <strong>Fin:</strong>{" "}
-                  {new Date(reserva.finReserva).toLocaleString()}
-                </p>
+                  <p>
+                    <strong>Inicio:</strong>{" "}
+                    {new Date(reserva.inicioReserva).toLocaleString()}
+                  </p>
 
-                <p>
-                  <strong>Estado:</strong> {reserva.estadoReserva}
-                </p>
+                  <p>
+                    <strong>Fin:</strong>{" "}
+                    {new Date(reserva.finReserva).toLocaleString()}
+                  </p>
+
+                  <p>
+                    <strong>Estado:</strong> {reserva.estadoReserva}
+                  </p>
+                </div>
 
                 <button
                   onClick={() => !pasada && eliminarReserva(reserva.idReserva)}
@@ -116,9 +129,9 @@ export default function ReservasPage() {
                   {pasada ? "Reserva pasada" : "Cancelar reserva"}
                 </button>
               </div>
-            </div>
-          );
-        })
+            );
+          })}
+        </div>
       )}
     </div>
   );
